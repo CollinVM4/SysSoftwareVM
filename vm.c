@@ -62,19 +62,18 @@ int base(int BP, int L)
     return arb;
 }
 
+//print function
 void print_state(int PC, int BP, int SP) {
     printf("%d %d %d ", PC, BP, SP);
 
     int i, j;
     int arb = BP;
-    // Print stack contents with activation records separated by a vertical bar
     for (i = PAS_SIZE - 1; i >= SP; i--) {
         printf("%d ", pas[i]);
         if (i == BP) {
             printf("| ");
-            // Find the next activation record's base pointer
             if (pas[arb] != 0 && pas[arb - 1] != 0 && pas[arb - 2] != 0) {
-                 arb = pas[arb - 1]; // dynamic link
+                 arb = pas[arb - 1]; 
             }
         }
     }
