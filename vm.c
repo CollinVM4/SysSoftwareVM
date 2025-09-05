@@ -40,6 +40,14 @@ Due Date: Friday, September 12th, 2025
 // global program address space
 int pas[PAS_SIZE] = {0};
 
+// Instruction Register (IR)
+typedef struct instruction {
+    int op;
+    int l;
+    int m;
+} instruction;
+
+const char* op_mnemonics[] = {"LIT", "OPR", "LOD", "STO", "CAL", "INC", "JMP", "JPC", "SYS"};
 
 // this is written by professor
 /* Find base L levels down from the current activation record */
