@@ -119,6 +119,44 @@ int main(int argc, char *argv[])
 
 
     // further execution loop will go under here
+    //fetch-execute cycle
+
+    //print values
+
+    do{
+        //fetch cycle
+
+        //print instruction before execution
+
+        //execution
+
+        switch(){
+            case 1: //LIT
+            case 2: //OPR
+                switch(){
+                    case 0://RTN
+                    case 1://ADD
+                    case 2://SUB
+                    case 3://MUL
+                    case 4://DIV
+                    case 5: //EQL
+                    case 6: //NEQ
+                    case 7://LSS
+                    case 8: //LEQ
+                    case 9: //GTR
+                    case 10: //GEQ
+                }
+                break;
+            case 3: //LOD
+            case 4: //STO
+            case 5: //CAL
+            case 6: //INC
+            case 7: //JMP
+            case 8: //JPC
+            case 9: //SYS
+        }
+        print_state(PC, BP, SP);
+    }while(!halt)
 
 
     return 0;
