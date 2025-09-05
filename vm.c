@@ -120,40 +120,121 @@ int main(int argc, char *argv[])
 
     // further execution loop will go under here
     //fetch-execute cycle
+    instruction ir;
+    int halt = 0;
 
     //print values
-
+    printf("Initial values: %d %d %d\n", PC, BP, SP);
+    
     do{
         //fetch cycle
-
+        ir.op = pas[PC];
+        ir.l = pas[PC - 1];
+        ir.m = pas[PC - 2];
+        PC -= 3;
+        
         //print instruction before execution
+        printf("%s %d %d ", op_mnemonics[ir.op - 1], ir.l, ir.m);
 
         //execution
-
-        switch(){
+        switch(ir.op){
             case 1: //LIT
+                SP--;
+                pas[SP] = ir.m;
+                break;
             case 2: //OPR
-                switch(){
+                switch(ir.m){
                     case 0://RTN
+                        SP = BP + 1;
+                        BP = pas[SP - 2];
+                        PC = pas[SP - 3];
+                        break;
                     case 1://ADD
+                        pas[SP + 1] += pas[SP];
+                        SP++;
+                        break;
                     case 2://SUB
+                        pas[SP + 1] -= pas[SP];
+                        SP++;
+                        break;
                     case 3://MUL
+                        pas[SP + 1] *= pas[SP];
+                        SP++;
+                        break;
                     case 4://DIV
+                        pas[SP + 1] /= pas[SP];
+                        SP++;
+                        break;
                     case 5: //EQL
+                        pas[SP + 1] = (pas[SP + 1] == pas[SP]);
+                        SP++;
+                        break;
                     case 6: //NEQ
+                        pas[SP + 1] = (pas[SP + 1] != pas[SP]);
+                        SP++;
+                        break;
                     case 7://LSS
+                        pas[SP + 1] = (pas[SP + 1] < pas[SP]);
+                        SP++;
+                        break;
                     case 8: //LEQ
+                        pas[SP + 1] = (pas[SP + 1] <= pas[SP]);
+                        SP++;
+                        break;
                     case 9: //GTR
+                        pas[SP + 1] = (pas[SP + 1] > pas[SP]);
+                        SP++;
+                        break;
                     case 10: //GEQ
+                        pas[SP + 1] = (pas[SP + 1] >= pas[SP]);
+                        SP++;
+                        break;
                 }
                 break;
             case 3: //LOD
+                SP--;
+                pas[SP] = pas[base(BP, ir.l) - ir.m];
+                break;
             case 4: //STO
+                pas[base(BP, ir.l) - ir.m] = pas[SP];
+                SP++;
+                break;
             case 5: //CAL
+                pas[SP - 1] = base(BP, ir.l); //SL
+                pas[SP - 2] = BP;             //DL
+                pas[SP - 3] = PC;             //RA
+                BP = SP - 1;
+                PC = ir.m;
+                break;
             case 6: //INC
+                SP -= ir.m;
+                break;
             case 7: //JMP
+                PC = ir.m;
+                break;
             case 8: //JPC
+                if (pas[SP] == 0) {
+                    PC = ir.m;
+                }
+                SP++;
+                break;
             case 9: //SYS
+                switch (ir.m) {
+                    case 1: //output
+                        printf("Output result is: %d\n", pas[SP]);
+                        SP++;
+                        break;
+                    case 2: //read
+                        printf("Please Enter an Integer: ");
+                        SP--;
+                        scanf("%d", &pas[SP]);
+                        break;
+                    case 3: //hlt
+                        halt = 1;
+                        break;
+                }
+                break;
+
         }
         print_state(PC, BP, SP);
     }while(!halt)
