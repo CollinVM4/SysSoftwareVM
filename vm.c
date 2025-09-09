@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
                     case 2: //read
                         printf("Please Enter an Integer: ");
                         SP--;
-                        scanf("%d", &pas[SP]);
+                        (void)scanf("%d", &pas[SP]);
                         break;
                     case 3: //hlt
                         halt = 1;
