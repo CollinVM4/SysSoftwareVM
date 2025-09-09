@@ -30,15 +30,18 @@ Instructor: Dr. Jie Lin
 Due Date: Friday, September 12th, 2025
 */
 
+// libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-// constants 
+// variables 
 #define PAS_SIZE 500 // as defined by section 3 (instructions file)
+#define TOP (PAS_SIZE - 1) // tracks top of code segment
+int CODE_FLOOR = PAS_SIZE; // tracks bottom of code segment
+int pas[PAS_SIZE] = {0}; // global program address space
+const char* op_mnemonics[] = {"LIT", "OPR", "LOD", "STO", "CAL", "INC", "JMP", "JPC", "SYS"};
 
-// global program address space
-int pas[PAS_SIZE] = {0};
 
 // Instruction Register (IR)
 typedef struct instruction {
@@ -47,7 +50,6 @@ typedef struct instruction {
     int m;
 } instruction;
 
-const char* op_mnemonics[] = {"LIT", "OPR", "LOD", "STO", "CAL", "INC", "JMP", "JPC", "SYS"};
 
 // this is written by professor
 /* Find base L levels down from the current activation record */
@@ -62,20 +64,14 @@ int base(int BP, int L)
     return arb;
 }
 
+
 //print function
 void print_state(int PC, int BP, int SP) {
     printf("%d %d %d ", PC, BP, SP);
-
-    int i;
-    int arb = BP;
-    for (i = PAS_SIZE - 1; i >= SP; i--) {
+    int i, arb = BP;
+    for (i = CODE_FLOOR - 1; i >= SP; i--) { 
+        if (i == arb) { printf("| "); arb = pas[arb - 1]; }
         printf("%d ", pas[i]);
-        if (i == BP) {
-            printf("| ");
-            if (pas[arb] != 0 && pas[arb - 1] != 0 && pas[arb - 2] != 0) {
-                 arb = pas[arb - 1]; 
-            }
-        }
     }
     printf("\n");
 }
@@ -83,6 +79,12 @@ void print_state(int PC, int BP, int SP) {
 
 int main(int argc, char *argv[]) 
 {
+
+    // more than 1 argument check
+    if (argc != 2) {
+        fprintf(stderr, "ERROR: ONLY USE 1 input.txt\n");
+        return 1;
+    }
 
     // open input file
     FILE *input = fopen(argv[1], "r");
@@ -98,7 +100,7 @@ int main(int argc, char *argv[])
     int M;  // modifier
     int addr = PAS_SIZE - 1;
     int instructionCount = 0;
-    int lowestUsed = PAS_SIZE;    // last "M" loaded (track to set SP later)
+    int lowestUsed = PAS_SIZE;    // last loaded M (track to set SP later)
 
     // read from file, load instructions into PAS
     while (fscanf(input, "%d %d %d", &op, &L, &M) == 3) 
@@ -116,9 +118,8 @@ int main(int argc, char *argv[])
     int PC = PAS_SIZE - 1;   
     int SP = lowestUsed;    
     int BP = SP - 1;
+    CODE_FLOOR = SP;
 
-
-    // further execution loop will go under here
     //fetch-execute cycle
     instruction ir;
     int halt = 0;
@@ -126,6 +127,7 @@ int main(int argc, char *argv[])
     //print values
     printf("Initial values: %d %d %d\n", PC, BP, SP);
     
+    // main execution loop
     do{
         //fetch cycle
         ir.op = pas[PC];
@@ -134,8 +136,38 @@ int main(int argc, char *argv[])
         PC -= 3;
         
         //print instruction before execution
-        printf("%s %d %d ", op_mnemonics[ir.op - 1], ir.l, ir.m);
-
+        int delayFlag = (ir.op == 9); // print sys after we execute it (matches instructions formatting)
+        if (!delayFlag) 
+        {
+            if (ir.op == 2) // OPR (arithmetic operations)
+            {
+                // array for OPR mnemonics
+                static const char* opr_arithmetic[] = 
+                {
+                    "RTN","ADD","SUB","MUL","DIV","EQL","NEQ","LSS","LEQ","GTR","GEQ"
+                };
+                const char* name;
+                if (ir.m >= 0 && ir.m <= 10) 
+                {
+                    name = opr_arithmetic[ir.m];
+                } 
+                else 
+                {
+                    name = "OPR";
+                }
+                printf("%s %d %d ", name, ir.l, ir.m);
+            } 
+            else if (ir.op >= 1 && ir.op <= 9) // other operations
+            {
+                printf("%s %d %d ", op_mnemonics[ir.op - 1], ir.l, ir.m);
+            } 
+            else // invalid opcode
+            {
+                printf("OP%d %d %d ", ir.op, ir.l, ir.m);
+            }
+        }
+       
+            
         //execution
         switch(ir.op){
             case 1: //LIT
@@ -204,41 +236,48 @@ int main(int argc, char *argv[])
                 pas[SP - 2] = BP;             //DL
                 pas[SP - 3] = PC;             //RA
                 BP = SP - 1;
-                PC = ir.m;
+                PC = TOP - ir.m;
                 break;
             case 6: //INC
                 SP -= ir.m;
                 break;
             case 7: //JMP
-                PC = ir.m;
+                PC = (TOP - ir.m);
                 break;
             case 8: //JPC
                 if (pas[SP] == 0) {
-                    PC = ir.m;
+                    PC = TOP - ir.m;
                 }
                 SP++;
                 break;
-            case 9: //SYS
+            case 9: // SYS
                 switch (ir.m) {
-                    case 1: //output
+                    case 1: // output
                         printf("Output result is: %d\n", pas[SP]);
                         SP++;
                         break;
-                    case 2: //read
+                    case 2: // read
                         printf("Please Enter an Integer: ");
                         SP--;
-                        (void)scanf("%d", &pas[SP]);
+                        if (scanf("%d", &pas[SP]) != 1) 
+                        {
+                            fprintf(stderr, "failure to read integer\n");
+                            return 1;
+                        }
                         break;
-                    case 3: //hlt
+                    case 3: // hlt
                         halt = 1;
                         break;
+                    default:
+                        fprintf(stderr, "runtime error: invalid SYS m=%d\n", ir.m);
+                        return 1;
                 }
-                break;
-
-        }
-        print_state(PC, BP, SP);
-    }while(!halt);
-
-
+                // print delayed for SYS
+                printf("SYS %d %d ", ir.l, ir.m);
+                print_state(PC, BP, SP);
+                continue;  
+            }       
+            print_state(PC, BP, SP); // print state for current execution
+        } while (!halt);
     return 0;
 }
