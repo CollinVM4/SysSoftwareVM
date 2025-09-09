@@ -66,7 +66,7 @@ int base(int BP, int L)
 void print_state(int PC, int BP, int SP) {
     printf("%d %d %d ", PC, BP, SP);
 
-    int i, j;
+    int i;
     int arb = BP;
     for (i = PAS_SIZE - 1; i >= SP; i--) {
         printf("%d ", pas[i]);
@@ -237,7 +237,7 @@ int main(int argc, char *argv[])
 
         }
         print_state(PC, BP, SP);
-    }while(!halt)
+    }while(!halt);
 
 
     return 0;
